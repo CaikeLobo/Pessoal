@@ -1,0 +1,284 @@
+import java.io.*;
+import java.util.*;
+
+// Interface para as operações do banco
+interface OperacoesBanco {
+    void verificarSaldo(Conta conta);
+    void depositar(Conta conta, int valor);
+    void sacar(Conta conta, int valor);
+    void transferir(Conta contaOrigem, Conta contaDestino, int valor);
+    void logout();
+}
+
+// Implementação das operações do banco
+class Banco implements OperacoesBanco {
+    private Map<String, Conta> contas;
+    private Conta contaLogada;
+
+    public Banco() {
+        contas = new HashMap<>();
+        carregarContas();
+    }
+
+    // Carrega as contas do arquivo texto
+    private void carregarContas() {
+        try (BufferedReader br = new BufferedReader(new FileReader("C:\\\\Users\\\\caike\\\\Downloads\\\\contas.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                String cpf = parts[0];
+                String nome = parts[1];
+                String numeroDaConta = parts[2];
+                String senha = parts[3];
+                int saldo = Integer.parseInt(parts[4]);
+                Conta conta = new Conta(numeroDaConta, senha, saldo, cpf, nome);
+                contas.put(numeroDaConta, conta);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Salva as contas no arquivo texto
+    private void salvarContas() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\\\Users\\\\caike\\\\Downloads\\\\contas.txt"))) {
+            for (Conta conta : contas.values()) {
+                bw.write(conta.getCpf() + "," + conta.getNome() + "," + conta.getNumeroDaConta() + "," + conta.getSenha() + "," + conta.getSaldo());
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Implementação dos métodos da interface OperacoesBanco
+    @Override
+    public void verificarSaldo(Conta conta) {
+        System.out.println("Saldo: " + conta.getSaldo());
+    }
+
+    @Override
+    public void depositar(Conta conta, int valor) {
+        conta.depositar(valor);
+        salvarContas();
+        System.out.println("Depósito realizado com sucesso.");
+    }
+
+    @Override
+    public void sacar(Conta conta, int valor) {
+        if (conta.sacar(valor)) {
+            salvarContas();
+            System.out.println("Saque realizado com sucesso.");
+        } else {
+            System.out.println("Saldo insuficiente.");
+        }
+    }
+
+    @Override
+    public void transferir(Conta contaOrigem, Conta contaDestino, int valor) {
+        if (contaOrigem.transferir(contaDestino, valor)) {
+            salvarContas();
+            System.out.println("Transferência realizada com sucesso.");
+        } else {
+            System.out.println("Saldo insuficiente para transferência.");
+        }
+    }
+
+    @Override
+    public void logout() {
+        contaLogada = null;
+        System.out.println("Logout realizado com sucesso.");
+    }
+
+    // Método para criar uma nova conta
+    public void criarConta(String nome, String cpf, String numeroDaConta, String senha) {
+        if (!contas.containsKey(numeroDaConta)) {
+            Conta conta = new Conta(numeroDaConta, senha, 0, cpf, nome);
+            contas.put(numeroDaConta, conta);
+            salvarContas();
+            System.out.println("Conta criada com sucesso.");
+        } else {
+            System.out.println("Número de conta já existente.");
+        }
+    }
+
+    // Método para realizar login
+    public void login(String numeroDaConta, String senha) {
+        if (contas.containsKey(numeroDaConta)) {
+            Conta conta = contas.get(numeroDaConta);
+            if (conta.getSenha().equals(senha)) {
+                contaLogada = conta;
+                System.out.println("Login realizado com sucesso.");
+            } else {
+                System.out.println("Senha incorreta.");
+            }
+        } else {
+            System.out.println("Conta não encontrada.");
+        }
+    }
+
+    // Método para obter a conta logada
+    public Conta getContaLogada() {
+        return contaLogada;
+    }
+    
+    // Método para obter conta pelo número
+    public Conta getContaByNumero(String numero) {
+        return contas.get(numero);
+    }
+}
+
+// Classe para representar uma conta
+class Conta {
+    private String numeroDaConta;
+    private String senha;
+    private int saldo;
+    private String cpf;
+    private String nome;
+
+    public Conta(String numeroDaConta, String senha, int saldo, String cpf, String nome) {
+        this.numeroDaConta = numeroDaConta;
+        this.senha = senha;
+        this.saldo = saldo;
+        this.cpf = cpf;
+        this.nome = nome;
+    }
+
+    public String getNumeroDaConta() {
+        return numeroDaConta;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public int getSaldo() {
+        return saldo;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void depositar(int valor) {
+        saldo += valor;
+    }
+
+    public boolean sacar(int valor) {
+        if (valor <= saldo) {
+            saldo -= valor;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean transferir(Conta destino, int valor) {
+        if (valor <= saldo) {
+            saldo -= valor;
+            destino.depositar(valor);
+            return true;
+        }
+        return false;
+    }
+}
+
+///////////////////////////////
+
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Banco banco = new Banco();
+
+        while (true) {
+            System.out.println("\nSelecione uma opção:");
+            System.out.println("1. Login");
+            System.out.println("2. Criar Conta");
+            System.out.println("3. Sair");
+
+            int opcao = scanner.nextInt();
+
+            switch (opcao) {
+                case 1:
+                    System.out.println("Número da conta:");
+                    String numeroDaConta = scanner.next();
+                    System.out.println("Senha:");
+                    String senha = scanner.next();
+                    banco.login(numeroDaConta, senha);
+                    if (banco.getContaLogada() != null) {
+                        menuOperacoes(banco, scanner);
+                    }
+                    break;
+                case 2:
+                    System.out.println("Nome:");
+                    String nome = scanner.next();
+                    System.out.println("CPF:");
+                    String cpf = scanner.next();
+                    System.out.println("Número da conta:");
+                    String numeroConta = scanner.next();
+                    System.out.println("Senha:");
+                    String senhaConta = scanner.next();
+                    banco.criarConta(nome, cpf, numeroConta, senhaConta);
+                    break;
+                case 3:
+                    System.out.println("Saindo...");
+                    System.exit(0);
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        }
+    }
+
+    // Menu de operações disponíveis após login
+    private static void menuOperacoes(Banco banco, Scanner scanner) {
+        while (true) {
+            System.out.println("\nSelecione uma operação:");
+            System.out.println("1. Verificar Saldo");
+            System.out.println("2. Depositar");
+            System.out.println("3. Sacar");
+            System.out.println("4. Transferir");
+            System.out.println("5. Logout");
+
+            int opcao = scanner.nextInt();
+
+            switch (opcao) {
+                case 1:
+                    banco.verificarSaldo(banco.getContaLogada());
+                    break;
+                case 2:
+                    System.out.println("Digite o valor a ser depositado:");
+                    int valorDeposito = scanner.nextInt();
+                    banco.depositar(banco.getContaLogada(), valorDeposito);
+                    break;
+                case 3:
+                    System.out.println("Digite o valor a ser sacado:");
+                    int valorSaque = scanner.nextInt();
+                    banco.sacar(banco.getContaLogada(), valorSaque);
+                    break;
+                case 4:
+                    System.out.println("Digite o número da conta de destino:");
+                    String numeroDestino = scanner.next();
+                    Conta contaDestino = banco.getContaByNumero(numeroDestino);
+                    if (contaDestino != null) {
+                        System.out.println("Digite o valor a ser transferido:");
+                        int valorTransferencia = scanner.nextInt();
+                        banco.transferir(banco.getContaLogada(), contaDestino, valorTransferencia);
+                    } else {
+                        System.out.println("Conta de destino não encontrada.");
+                    }
+                    break;
+                case 5:
+                    banco.logout();
+                    return;
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        }
+    }
+}
