@@ -1,0 +1,50 @@
+FUNCTION_BLOCK musica
+
+    VAR_INPUT
+        complexidadePartitura : REAL;
+        rapidezExecucao : REAL;
+    END_VAR
+
+    VAR_OUTPUT
+        dificuldade : REAL;
+    END_VAR
+
+    FUZZIFY complexidadePartitura
+        TERM baixa := (0, 1) (5, 0);
+        TERM media := (3, 0) (5, 1) (7, 0);
+        TERM alta := (5, 0) (10, 1);
+    END_FUZZIFY
+
+    FUZZIFY rapidezExecucao
+        TERM lenta := (0, 1) (5, 0);
+        TERM media := (3, 0) (5, 1) (7, 0);
+        TERM rapida := (5, 0) (10, 1);
+    END_FUZZIFY
+
+    DEFUZZIFY dificuldade
+        TERM facil := (0, 1) (4, 0);
+        TERM media := (3, 0) (5, 1) (6, 1) (8, 0);
+        TERM dificil := (7, 0) (9, 1) (10, 0);
+        TERM muito_dificil := (9, 0) (10, 1);
+        METHOD : COG; // Centro de Gravidade
+        DEFAULT := 0;
+    END_DEFUZZIFY
+
+    RULEBLOCK regras
+        AND : MIN;
+        ACT : MIN;
+        ACCU : MAX;
+
+        RULE 1 : IF complexidadePartitura IS baixa AND rapidezExecucao IS lenta THEN dificuldade IS facil;
+	RULE 2 : IF complexidadePartitura IS media AND rapidezExecucao IS media THEN dificuldade IS media;
+	RULE 3 : IF complexidadePartitura IS alta AND rapidezExecucao IS rapida THEN dificuldade IS muito_dificil;
+	RULE 4 : IF complexidadePartitura IS baixa AND rapidezExecucao IS rapida THEN dificuldade IS media;
+	RULE 5 : IF complexidadePartitura IS media AND rapidezExecucao IS lenta THEN dificuldade IS media;
+	RULE 6 : IF complexidadePartitura IS alta AND rapidezExecucao IS lenta THEN dificuldade IS dificil;
+	RULE 7 : IF complexidadePartitura IS media AND rapidezExecucao IS rapida THEN dificuldade IS dificil;
+	RULE 8 : IF complexidadePartitura IS alta AND rapidezExecucao IS media THEN dificuldade IS muito_dificil;
+	RULE 9 : IF complexidadePartitura IS baixa AND rapidezExecucao IS media THEN dificuldade IS media;
+
+    END_RULEBLOCK
+
+END_FUNCTION_BLOCK
